@@ -1,5 +1,3 @@
-git init
-
 import requests
 
 class RecipeApp:
