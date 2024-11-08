@@ -5,21 +5,43 @@ import requests
 app = Flask(__name__)
 DATABASE = 'autos.db'
 
-# Función para ejecutar consultas en la base de datos
-def query_db(query, args=(), one=False):
-    conn = sqlite3.connect(DATABASE)
-    cursor = conn.cursor()
-    cursor.execute(query, args)
-    rv = cursor.fetchall()
-    conn.commit()
-    conn.close()
-    return (rv[0] if rv else None) if one else rv
+# Función para conectar a la base de datos
+def connect_to_database():
+    try:
+        conn = sqlite3.connect(DATABASE)
+        return conn
+    except sqlite3.Error as error_conexion:
+        print(f"Error al conectar a la base de datos '{DATABASE}': {error_conexion}")
+        return None
+
+# id, marca, modelo, año_creacion, precio_usd, condicion
+
+@app.route("/")
+def hello():
+    return "Hola, bienvenido a la API de autos."
 
 # Endpoint para ver todos los autos
 @app.route("/autos", methods=["GET"])
 def get_autos():
-    autos = query_db("SELECT * FROM autos")
-    return jsonify(autos), 200
+    conn = connect_to_database()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM autos")
+    autos = cursor.fetchall()
+    conn.close()
+
+    clean_autos = []
+    for auto in autos:
+        clean_autos.append({
+            "id": auto[0],
+            "marca": auto[1],
+            "modelo": auto[2],
+            "año_creacion": auto[3],
+            "precio_usd": auto[4],
+            "condicion": auto[5],
+        })
+    
+    return jsonify(clean_autos), 200
 
 # Endpoint para agregar un auto nuevo
 @app.route("/autos", methods=["POST"])
@@ -31,8 +53,13 @@ def add_auto():
     precio_usd = data.get("precio_usd")
     condicion = data.get("condicion")
 
-    query_db("INSERT INTO autos (marca, modelo, año_creacion, precio_usd, condicion) VALUES (?, ?, ?, ?, ?)",
-             (marca, modelo, año_creacion, precio_usd, condicion))
+    conn = connect_to_database()
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT INTO autos (marca, modelo, año_creacion, precio_usd, condicion) VALUES (?, ?, ?, ?, ?)",
+                   (marca, modelo, año_creacion, precio_usd, condicion))
+    conn.commit()
+    conn.close()
 
     return jsonify({"message": "Auto agregado con éxito"}), 201
 
@@ -41,7 +68,12 @@ def add_auto():
 def precio_pesos(auto_id):
     try:
         # Obtener el precio del auto en USD
-        precio_usd = query_db("SELECT precio_usd FROM autos WHERE id = ?", (auto_id,), one=True)[0]
+        conn = connect_to_database()
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT precio_usd FROM autos WHERE id = ?", (auto_id,))
+        precio_usd = cursor.fetchone()[0]
+        conn.close()
 
         # Obtener tipo de cambio de la API de BlueLytics
         response = requests.get("https://api.bluelytics.com.ar/v2/latest")
@@ -63,15 +95,26 @@ def update_auto(auto_id):
     precio_usd = data.get("precio_usd")
     condicion = data.get("condicion")
 
-    query_db("UPDATE autos SET marca = ?, modelo = ?, año_creacion = ?, precio_usd = ?, condicion = ? WHERE id = ?",
-             (marca, modelo, año_creacion, precio_usd, condicion, auto_id))
+    conn = connect_to_database()
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE autos SET marca = ?, modelo = ?, año_creacion = ?, precio_usd = ?, condicion = ? WHERE id = ?",
+                   (marca, modelo, año_creacion, precio_usd, condicion, auto_id))
+    conn.commit()
+    conn.close()
 
     return jsonify({"message": "Auto actualizado con éxito"}), 200
 
 # Endpoint para eliminar un auto
 @app.route("/autos/<int:auto_id>", methods=["DELETE"])
 def delete_auto(auto_id):
-    query_db("DELETE FROM autos WHERE id = ?", (auto_id,))
+    conn = connect_to_database()
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM autos WHERE id = ?", (auto_id,))
+    conn.commit()
+    conn.close()
+
     return jsonify({"message": "Auto eliminado con éxito"}), 200
 
 if __name__ == "__main__":
