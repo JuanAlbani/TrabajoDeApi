@@ -1,6 +1,43 @@
+import sqlite3
 
+DATABASE = 'autos.db'
+
+# Función para crear la tabla de autos
+def create_tables():
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+
+    # Crear tabla de autos con las columnas solicitadas
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS autos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            marca TEXT NOT NULL,
+            modelo TEXT NOT NULL,
+            año_creacion INTEGER NOT NULL,
+            precio_usd REAL NOT NULL,
+            condicion TEXT CHECK(condicion IN ('Nuevo', 'Usado')) NOT NULL
+        )
+    ''')
+
+    conn.commit()
+    conn.close()
+    print("Tabla de autos creada con éxito en la base de datos.")
+
+# Función para insertar un auto en la base de datos
+def insert_car(marca, modelo, año_creacion, precio_usd, condicion):
+    conn = sqlite3.connect(DATABASE)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+    INSERT INTO autos (marca, modelo, año_creacion, precio_usd, condicion)
+    VALUES (?, ?, ?, ?, ?)
+    ''', (marca, modelo, año_creacion, precio_usd, condicion))
+
+    conn.commit()
+    conn.close()
+
+# Datos de 30 autos con precios realistas y condición (Nuevo / Usado)
 cars_data = [
-    # Marca, Modelo, Año, Precio en USD, Condición (Nuevo / Usado)
     ('Toyota', 'Corolla', 2024, 25000, 'Nuevo'),
     ('Honda', 'Civic', 2023, 24000, 'Nuevo'),
     ('Ford', 'Focus', 2022, 22000, 'Nuevo'),
@@ -32,3 +69,16 @@ cars_data = [
     ('Hyundai', 'Santa Fe', 2021, 33000, 'Usado'),
     ('Kia', 'Sorento', 2023, 35000, 'Nuevo')
 ]
+
+# Insertar cada auto en la base de datos
+def insert_multiple_cars():
+    for car in cars_data:
+        insert_car(*car)
+
+# Crear las tablas si no existen
+create_tables()
+
+# Insertar los autos en la base de datos
+insert_multiple_cars()
+
+print("Autos insertados con éxito.")
