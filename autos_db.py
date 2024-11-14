@@ -18,10 +18,21 @@ def create_tables():
             condicion TEXT CHECK(condicion IN ('Nuevo', 'Usado')) NOT NULL
         )
     ''')
+    # Crear tabla de clientes con columnas para registrar nombre, edad y fecha de creación
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS clientes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT NOT NULL,
+            edad INTEGER,
+            fecha_creacion TEXT NOT NULL
+        )
+    ''')
 
     conn.commit()
+    print("Tablas 'autos' y 'clientes' creadas con éxito en la base de datos.")
+    conn.commit()
     conn.close()
-    print("Tabla de autos creada con éxito en la base de datos.")
+
 
 # Función para insertar un auto en la base de datos
 def insert_car(marca, modelo, año_creacion, precio_usd, condicion):
@@ -70,15 +81,16 @@ cars_data = [
     ('Kia', 'Sorento', 2023, 35000, 'Nuevo')
 ]
 
+
 # Insertar cada auto en la base de datos
 def insert_multiple_cars():
     for car in cars_data:
         insert_car(*car)
-
-# Crear las tablas si no existen
-create_tables()
+    print ("Autos ejempos insertados con exito")
 
 # Insertar los autos en la base de datos
 insert_multiple_cars()
 
-print("Autos insertados con éxito.")
+# Crear las tablas si no existen
+if __name__ == "__main__":
+    create_tables()
